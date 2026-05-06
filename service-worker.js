@@ -1,12 +1,44 @@
-// This is the service worker script, which executes in its own context
-// when the extension is installed or refreshed (or when you access its console).
-// It would correspond to the background script in chrome extensions v2.
+import {
+  getIsExtensionActive,
+  setIsExtensionActive,
+  enableNetBlocking,
+  disableNetBlocking,
+} from './utils.js';
 
-console.log("This prints to the console of the service worker (background script)")
+// SETUP
+getIsExtensionActive().then((isActive) => {
+  if (isActive) {
+    chrome.action.setIcon({ path: 'logo/block.png' });
+  } else {
+    disableNetBlocking();
+    chrome.action.setIcon({ path: 'logo/allow.png' });
+  }
+});
 
-// Importing and using functionality from external files is also possible.
-importScripts('service-worker-utils.js')
+// EVENT LISTENERS
+chrome.tabs.onCreated.addListener(async function (tab) {
+  const isActive = await getIsExtensionActive();
+  if (isActive) {
+    const knownTabs = await chrome.tabs.query({});
+    if (knownTabs.length > 1) {
+      await chrome.tabs.remove(tab.id);
+    } else {
+      console.log(
+        `Tab created, but not blocked due to insufficient number of tabs. Tabs open: ${knownTabs.length}.`,
+      );
+    }
+  }
+});
 
-// If you want to import a file that is deeper in the file hierarchy of your
-// extension, simply do `importScripts('path/to/file.js')`.
-// The path should be relative to the file `manifest.json`.
+chrome.action.onClicked.addListener(async function () {
+  const isActive = await getIsExtensionActive();
+  if (isActive) {
+    await setIsExtensionActive(false);
+    await disableNetBlocking();
+    chrome.action.setIcon({ path: 'logo/allow.png' });
+  } else {
+    await setIsExtensionActive(true);
+    await enableNetBlocking();
+    chrome.action.setIcon({ path: 'logo/block.png' });
+  }
+});
