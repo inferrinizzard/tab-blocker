@@ -7,24 +7,27 @@ import {
   disableNetBlocking,
 } from './utils.js';
 
-function sendMessageToContentScript(message) {
-  chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
-    const activeTab = tabs[0];
-    // Send message to that specific tab ID
-    chrome.tabs.sendMessage(activeTab.id, message);
-  });
+function sendMessage(message) {
+  chrome.tabs.query({ active: true, currentWindow: true }, (tabs) =>
+    chrome.tabs.sendMessage(tabs[0].id, message),
+  );
 }
 
 function onActivateExtension() {
   chrome.action.setIcon({ path: 'logo/block.png' });
   chrome.action.setTitle({ title: 'Currently blocking tabs' });
-  sendMessageToContentScript({ isExtensionActive: true });
+  // Send message to active tab to attach document listener
+  sendMessage({ isExtensionActive: true });
 }
 
 function onDeactivateExtension() {
   chrome.action.setIcon({ path: 'logo/allow.png' });
   chrome.action.setTitle({ title: 'Not blocking tabs' });
-  sendMessageToContentScript({ isExtensionActive: false });
+  chrome.tabs.query({ currentWindow: true }, (tabs) =>
+    tabs.forEach((tab) =>
+      chrome.tabs.sendMessage(tab.id, { isExtensionActive: false }),
+    ),
+  );
 }
 
 // SETUP
@@ -38,12 +41,13 @@ getIsExtensionActive().then((isActive) => {
 });
 
 // EVENT LISTENERS
-chrome.runtime.onMessage.addListener((message) => {
+chrome.runtime.onMessage.addListener(async (message) => {
+  if (message.setup) {
+    sendMessage({ isExtensionActive: await getIsExtensionActive() });
+  }
+
   if (message.isUserOriginated) {
     setIsUserOriginated(message.isUserOriginated);
-  }
-  if (message.log) {
-    console.log(message.log);
   }
 
   return true;

@@ -5,16 +5,25 @@ const middleClickHandler = function (e) {
   chrome.runtime.sendMessage({ isUserOriginated: true });
 };
 
-chrome.runtime.onMessage.addListener(function (message, _, sendResponse) {
-  console.log({ message });
+function attachHandler() {
+  document.addEventListener('auxclick', middleClickHandler);
+  document.addEventListener('click', middleClickHandler);
+  console.log('[tab-blocker]: Click handler attached');
+}
+
+function removeHandler() {
+  document.removeEventListener('auxclick', middleClickHandler);
+  document.removeEventListener('click', middleClickHandler);
+  console.log('[tab-blocker]: Click handler removed');
+}
+
+chrome.runtime.onMessage.addListener(async function (message, sender) {
   if (message.isExtensionActive) {
-    document.addEventListener('auxclick', middleClickHandler);
-    document.addEventListener('click', middleClickHandler);
-    sendResponse({ log: 'Click handler attached' });
+    attachHandler();
   } else {
-    document.removeEventListener('auxclick', middleClickHandler);
-    document.removeEventListener('click', middleClickHandler);
-    sendResponse({ log: 'Click handler removed' });
+    removeHandler();
   }
   return true;
 });
+
+chrome.runtime.sendMessage({ setup: true, isUserOriginated: false });
