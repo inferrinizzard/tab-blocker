@@ -15,14 +15,14 @@ function sendMessage(message) {
 
 function onActivateExtension() {
   chrome.action.setIcon({ path: 'logo/block.png' });
-  chrome.action.setTitle({ title: 'Currently blocking tabs' });
+  chrome.action.setTitle({ title: 'Currently blocking tabs (Ctrl+Shift+Y)' });
   // Send message to active tab to attach document listener
   sendMessage({ isExtensionActive: true });
 }
 
 function onDeactivateExtension() {
   chrome.action.setIcon({ path: 'logo/allow.png' });
-  chrome.action.setTitle({ title: 'Not blocking tabs' });
+  chrome.action.setTitle({ title: 'Not blocking tabs (Ctrl+Shift+Y)' });
   chrome.tabs.query({ currentWindow: true }, (tabs) =>
     tabs.forEach((tab) =>
       chrome.tabs.sendMessage(tab.id, { isExtensionActive: false }),
@@ -76,7 +76,7 @@ const tabCreateListener = async function (tab) {
   }
 };
 
-chrome.action.onClicked.addListener(async function () {
+const toggleHandler = async function () {
   const isActive = await getIsExtensionActive();
   if (isActive) {
     await setIsExtensionActive(false);
@@ -88,5 +88,13 @@ chrome.action.onClicked.addListener(async function () {
     await enableNetBlocking();
     onActivateExtension();
     chrome.tabs.onCreated.addListener(tabCreateListener);
+  }
+};
+
+chrome.action.onClicked.addListener(toggleHandler);
+chrome.commands.onCommand.addListener(function (command) {
+  console.log(command);
+  if (command === 'toggle') {
+    toggleHandler();
   }
 });

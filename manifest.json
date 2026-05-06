@@ -9,7 +9,13 @@
     "48": "logo/logo-48.png",
     "128": "logo/logo-128.png"
   },
-  "permissions": ["storage", "contextMenus", "tabs", "declarativeNetRequest"],
+  "permissions": [
+    "storage",
+    "contextMenus",
+    "tabs",
+    "declarativeNetRequest",
+    "commands"
+  ],
   "host_permissions": ["*://*/*"],
   "background": {
     "service_worker": "service-worker.js",
@@ -21,5 +27,11 @@
       "js": ["content.js"],
       "matches": ["<all_urls>"]
     }
-  ]
+  ],
+  "commands": {
+    "toggle": {
+      "suggested_key": "Ctrl+Shift+Y",
+      "description": "Toggle Tab Blocker"
+    }
+  }
 }
