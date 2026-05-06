@@ -26,7 +26,7 @@ getIsExtensionActive().then((isActive) => {
 });
 
 // EVENT LISTENERS
-chrome.tabs.onCreated.addListener(async function (tab) {
+const tabCreateListener = async function (tab) {
   const isActive = await getIsExtensionActive();
   if (isActive) {
     const knownTabs = await chrome.tabs.query({});
@@ -38,7 +38,7 @@ chrome.tabs.onCreated.addListener(async function (tab) {
       );
     }
   }
-});
+};
 
 chrome.action.onClicked.addListener(async function () {
   const isActive = await getIsExtensionActive();
@@ -46,9 +46,11 @@ chrome.action.onClicked.addListener(async function () {
     await setIsExtensionActive(false);
     await disableNetBlocking();
     onDeactivateExtension();
+    chrome.tabs.onCreated.removeListener(tabCreateListener);
   } else {
     await setIsExtensionActive(true);
     await enableNetBlocking();
     onActivateExtension();
+    chrome.tabs.onCreated.addListener(tabCreateListener);
   }
 });
