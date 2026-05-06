@@ -5,6 +5,7 @@ import {
   setIsUserOriginated,
   enableNetBlocking,
   disableNetBlocking,
+  allowSite,
 } from './utils.js';
 
 function sendMessage(message) {
@@ -25,7 +26,9 @@ function onDeactivateExtension() {
   chrome.action.setTitle({ title: 'Not blocking tabs (Ctrl+Shift+Y)' });
   chrome.tabs.query({ currentWindow: true }, (tabs) =>
     tabs.forEach((tab) =>
-      chrome.tabs.sendMessage(tab.id, { isExtensionActive: false }),
+      chrome.tabs
+        .sendMessage(tab.id, { isExtensionActive: false })
+        .catch(() => {}),
     ),
   );
 }
@@ -63,6 +66,7 @@ const tabCreateListener = async function (tab) {
 
   if (isUserOriginated) {
     setIsUserOriginated(false);
+    allowSite(tab.id);
     return;
   }
 
@@ -93,7 +97,6 @@ const toggleHandler = async function () {
 
 chrome.action.onClicked.addListener(toggleHandler);
 chrome.commands.onCommand.addListener(function (command) {
-  console.log(command);
   if (command === 'toggle') {
     toggleHandler();
   }

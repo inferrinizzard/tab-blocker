@@ -32,7 +32,7 @@ export async function enableNetBlocking() {
     .query({})
     .then((tabs) => tabs.map((tab) => tab.id));
   await chrome.declarativeNetRequest.updateSessionRules({
-    removeRuleIds: [1],
+    removeRuleIds: [BLOCK_RULE_ID],
     addRules: [
       {
         id: BLOCK_RULE_ID,
@@ -51,8 +51,29 @@ export async function enableNetBlocking() {
   );
 }
 export async function disableNetBlocking() {
-  await chrome.declarativeNetRequest.updateSessionRules({
-    removeRuleIds: [BLOCK_RULE_ID],
+  await chrome.declarativeNetRequest.getSessionRules((rules) => {
+    const allIds = rules.map((rule) => rule.id);
+    chrome.declarativeNetRequest.updateSessionRules({
+      removeRuleIds: allIds,
+    });
   });
   console.log(`Net blocking has been disabled.`);
+}
+export async function allowSite(tabId) {
+  const numRules = (await chrome.declarativeNetRequest.getSessionRules())
+    .length;
+
+  await chrome.declarativeNetRequest.updateSessionRules({
+    addRules: [
+      {
+        id: numRules + 1,
+        priority: 2,
+        action: { type: 'allow' },
+        condition: {
+          tabIds: [tabId],
+          resourceTypes: ['main_frame'],
+        },
+      },
+    ],
+  });
 }
