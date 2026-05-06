@@ -5,13 +5,23 @@ import {
   disableNetBlocking,
 } from './utils.js';
 
+function onActivateExtension() {
+  chrome.action.setIcon({ path: 'logo/block.png' });
+  chrome.action.setTitle({ title: 'Currently blocking tabs' });
+}
+
+function onDeactivateExtension() {
+  chrome.action.setIcon({ path: 'logo/allow.png' });
+  chrome.action.setTitle({ title: 'Not blocking tabs' });
+}
+
 // SETUP
 getIsExtensionActive().then((isActive) => {
   if (isActive) {
-    chrome.action.setIcon({ path: 'logo/block.png' });
+    onActivateExtension();
   } else {
     disableNetBlocking();
-    chrome.action.setIcon({ path: 'logo/allow.png' });
+    onDeactivateExtension();
   }
 });
 
@@ -35,10 +45,10 @@ chrome.action.onClicked.addListener(async function () {
   if (isActive) {
     await setIsExtensionActive(false);
     await disableNetBlocking();
-    chrome.action.setIcon({ path: 'logo/allow.png' });
+    onDeactivateExtension();
   } else {
     await setIsExtensionActive(true);
     await enableNetBlocking();
-    chrome.action.setIcon({ path: 'logo/block.png' });
+    onActivateExtension();
   }
 });
