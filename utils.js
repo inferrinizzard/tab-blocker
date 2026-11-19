@@ -60,18 +60,26 @@ export async function disableNetBlocking() {
   console.log(`Net blocking has been disabled.`);
 }
 export async function allowSite(tabId) {
-  const numRules = (await chrome.declarativeNetRequest.getSessionRules())
-    .length;
+  const rules = await chrome.declarativeNetRequest.getSessionRules();
+  const blockRule = rules.find((rule) => rule.id === BLOCK_RULE_ID);
+
+  if (!blockRule) {
+    throw new Error('Cannot approve tab because the blocking rule is missing.');
+  }
+
+  const excludedTabIds = blockRule.condition.excludedTabIds ?? [];
+  if (excludedTabIds.includes(tabId)) {
+    return;
+  }
 
   await chrome.declarativeNetRequest.updateSessionRules({
+    removeRuleIds: [BLOCK_RULE_ID],
     addRules: [
       {
-        id: numRules + 1,
-        priority: 2,
-        action: { type: 'allow' },
+        ...blockRule,
         condition: {
-          tabIds: [tabId],
-          resourceTypes: ['main_frame'],
+          ...blockRule.condition,
+          excludedTabIds: [...excludedTabIds, tabId],
         },
       },
     ],

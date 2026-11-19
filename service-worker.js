@@ -14,9 +14,17 @@ function sendMessage(message) {
   );
 }
 
+async function tabSwitchHandler({ tabId }) {
+  chrome.tabs.sendMessage(tabId, {
+    isExtensionActive: await getIsExtensionActive(),
+  });
+}
+
 function onActivateExtension() {
   chrome.action.setIcon({ path: 'logo/block.png' });
   chrome.action.setTitle({ title: 'Currently blocking tabs (Ctrl+Shift+Y)' });
+  chrome.tabs.onActivated.addListener(tabSwitchHandler);
+  chrome.tabs.onCreated.addListener(tabCreateListener);
   // Send message to active tab to attach document listener
   sendMessage({ isExtensionActive: true });
 }
@@ -24,7 +32,9 @@ function onActivateExtension() {
 function onDeactivateExtension() {
   chrome.action.setIcon({ path: 'logo/allow.png' });
   chrome.action.setTitle({ title: 'Not blocking tabs (Ctrl+Shift+Y)' });
-  chrome.tabs.query({ currentWindow: true }, (tabs) =>
+  chrome.tabs.onActivated.removeListener(tabSwitchHandler);
+  chrome.tabs.onCreated.removeListener(tabCreateListener);
+  chrome.tabs.query({}, (tabs) =>
     tabs.forEach((tab) =>
       chrome.tabs
         .sendMessage(tab.id, { isExtensionActive: false })
@@ -65,8 +75,8 @@ const tabCreateListener = async function (tab) {
   }
 
   if (isUserOriginated) {
-    setIsUserOriginated(false);
-    allowSite(tab.id);
+    await setIsUserOriginated(false);
+    await allowSite(tab.id);
     return;
   }
 
@@ -86,12 +96,10 @@ const toggleHandler = async function () {
     await setIsExtensionActive(false);
     await disableNetBlocking();
     onDeactivateExtension();
-    chrome.tabs.onCreated.removeListener(tabCreateListener);
   } else {
     await setIsExtensionActive(true);
     await enableNetBlocking();
     onActivateExtension();
-    chrome.tabs.onCreated.addListener(tabCreateListener);
   }
 };
 
